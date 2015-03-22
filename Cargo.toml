@@ -1,0 +1,9 @@
+[package]
+
+name = "simdcomp"
+version = "0.0.1"
+authors = ["Jihyun Yu <yjh0502@gmail.com>"]
+
+[dependencies]
+simdty = "0.0.2"
+llvmint = "0.0.2"
