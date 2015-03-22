@@ -10,13 +10,13 @@ def print_packbit(l, fn, macro):
     acc = []
     idx = 0
     for i in range(31):
-        acc.append(i)
+        acc.append(str(i))
         nextidx = ((i + 1) * l) / 32;
         if(idx != nextidx):
             idx = nextidx;
-            s += "%s, " % (acc)
+            s += "%s," % (";".join(acc))
             acc = []
-    s += "%s);\n}\n" % (acc + [31])
+    s += "%s); }\n" % (";".join(acc + ["31"]))
     return s
 
 def print_pack(fn, fnbit, macro):
@@ -34,4 +34,4 @@ def print_pack(fn, fnbit, macro):
 
 print print_pack("pack_nomask", "pack_nomask_%sbit", "sa")
 print print_pack("pack", "pack_mask_%sbit", "sam")
-print print_pack("unpack", "unpack_%sbit", "sam")
+print print_pack("unpack", "unpack_%sbit", "sms")
