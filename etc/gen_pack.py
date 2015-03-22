@@ -24,7 +24,7 @@ def print_pack(fn, fnbit, macro):
     for l in range(1, 32):
         s += print_packbit(l, fnbit % l, macro)
 
-    s += "pub fn %s(output: &mut [i32x4], input: &[i32x4], bits: i32) {\n" % (fn)
+    s += "fn %s(output: &mut [i32x4], input: &[i32x4], bits: i32) {\n" % (fn)
     s += "    match bits {\n"
     s += "        0 => (),\n"
     for l in range(1, 32):
@@ -33,6 +33,10 @@ def print_pack(fn, fnbit, macro):
     s += "    }\n}\n"
     return s
 
-print print_pack("pack_nomask", "pack_nomask_%sbit", "sa")
-print print_pack("pack", "pack_mask_%sbit", "sam")
-print print_pack("unpack", "unpack_%sbit", "sms")
+s = "// GENERATED CODE START\n"
+s += print_pack("pack_nomask_bits", "pack_nomask_%sbit", "sa") + "\n"
+s += print_pack("pack_bits", "pack_mask_%sbit", "sam") + "\n"
+s += print_pack("unpack_bits", "unpack_%sbit", "sms")
+s += "// GENERATED CODE END"
+
+print s

@@ -85,6 +85,49 @@ macro_rules! sms {
 } }
 }
 
+
+#[derive(Clone, Debug)]
+pub enum Error {
+    ShortInput,
+    ShortOutput,
+}
+
+pub type Result<T> = std::result::Result<T, Error>;
+
+pub fn pack_nomask(output: &mut [i32x4], input: &[i32x4], bits: i32) -> Result<()> {
+    if input.len() < 32usize {
+        return Err(Error::ShortInput);
+    }
+    if output.len() < bits as usize {
+        return Err(Error::ShortOutput);
+    }
+    pack_nomask_bits(output, input, bits);
+    Ok(())
+}
+
+pub fn pack(output: &mut [i32x4], input: &[i32x4], bits: i32) -> Result<()> {
+    if input.len() < 32usize {
+        return Err(Error::ShortInput);
+    }
+    if output.len() < bits as usize {
+        return Err(Error::ShortOutput);
+    }
+    pack_bits(output, input, bits);
+    Ok(())
+}
+
+pub fn unpack(output: &mut [i32x4], input: &[i32x4], bits: i32) -> Result<()> {
+    if input.len() < bits as usize {
+        return Err(Error::ShortInput);
+    }
+    if output.len() < 32usize {
+        return Err(Error::ShortOutput);
+    }
+    unpack_bits(output, input, bits);
+    Ok(())
+}
+
+// GENERATED CODE START
 fn pack_nomask_1bit(output: &mut [i32x4], input: &[i32x4]) {
     sa!(output, input, 1, 0;1;2;3;4;5;6;7;8;9;10;11;12;13;14;15;16;17;18;19;20;21;22;23;24;25;26;27;28;29;30;31); }
 fn pack_nomask_2bit(output: &mut [i32x4], input: &[i32x4]) {
@@ -147,7 +190,7 @@ fn pack_nomask_30bit(output: &mut [i32x4], input: &[i32x4]) {
     sa!(output, input, 30, 0;1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16;17,18,19,20,21,22,23,24,25,26,27,28,29,30,31); }
 fn pack_nomask_31bit(output: &mut [i32x4], input: &[i32x4]) {
     sa!(output, input, 31, 0;1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31); }
-pub fn pack_nomask(output: &mut [i32x4], input: &[i32x4], bits: i32) {
+fn pack_nomask_bits(output: &mut [i32x4], input: &[i32x4], bits: i32) {
     match bits {
         0 => (),
         1 => pack_nomask_1bit(output, input),
@@ -247,7 +290,7 @@ fn pack_mask_30bit(output: &mut [i32x4], input: &[i32x4]) {
     sam!(output, input, 30, 0;1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16;17,18,19,20,21,22,23,24,25,26,27,28,29,30,31); }
 fn pack_mask_31bit(output: &mut [i32x4], input: &[i32x4]) {
     sam!(output, input, 31, 0;1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31); }
-pub fn pack(output: &mut [i32x4], input: &[i32x4], bits: i32) {
+fn pack_bits(output: &mut [i32x4], input: &[i32x4], bits: i32) {
     match bits {
         0 => (),
         1 => pack_mask_1bit(output, input),
@@ -347,7 +390,7 @@ fn unpack_30bit(output: &mut [i32x4], input: &[i32x4]) {
     sms!(output, input, 30, 0;1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16;17,18,19,20,21,22,23,24,25,26,27,28,29,30,31); }
 fn unpack_31bit(output: &mut [i32x4], input: &[i32x4]) {
     sms!(output, input, 31, 0;1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31); }
-pub fn unpack(output: &mut [i32x4], input: &[i32x4], bits: i32) {
+fn unpack_bits(output: &mut [i32x4], input: &[i32x4], bits: i32) {
     match bits {
         0 => (),
         1 => unpack_1bit(output, input),
@@ -384,15 +427,15 @@ pub fn unpack(output: &mut [i32x4], input: &[i32x4], bits: i32) {
         _ => panic!("!invalid bit length")
     }
 }
-
+// GENERATED CODE END
 
 pub fn equal(a: &[i32x4], b: &[i32x4]) {
     assert!(a.len() == 32 && b.len() == 32);
     for i in (0..32) {
-        if a[i].0 != b[i].0 { println!("{}.0: {} {}", i, a[i].0, b[i].0); }
-        if a[i].1 != b[i].1 { println!("{}.1: {} {}", i, a[i].1, b[i].1); }
-        if a[i].2 != b[i].2 { println!("{}.2: {} {}", i, a[i].2, b[i].2); }
-        if a[i].3 != b[i].3 { println!("{}.3: {} {}", i, a[i].3, b[i].3); }
+        assert_eq!(a[i].0, b[i].0);
+        assert_eq!(a[i].1, b[i].1);
+        assert_eq!(a[i].2, b[i].2);
+        assert_eq!(a[i].3, b[i].3);
     }
 }
 
@@ -466,8 +509,7 @@ fn bench_pack1(b: &mut test::Bencher) {
 
     b.bytes = 4u64 * 32 * 2;
     b.iter(test::black_box(|| {
-        pack_nomask(&mut output, &input, 3);
-        unpack_3bit(&mut input, &output);
-        output
+        pack_nomask(&mut output, &input, 3).unwrap();
+        unpack(&mut input, &output, 3).unwrap();
     }))
 }
