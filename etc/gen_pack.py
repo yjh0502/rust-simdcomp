@@ -26,6 +26,7 @@ def print_pack(fn, fnbit, macro):
 
     s += "pub fn %s(output: &mut [i32x4], input: &[i32x4], bits: i32) {\n" % (fn)
     s += "    match bits {\n"
+    s += "        0 => (),\n"
     for l in range(1, 32):
         s += "        %s => %s(output, input),\n" % (l, fnbit % l)
     s += '        _ => panic!("!invalid bit length")\n'
