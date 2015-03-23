@@ -1,3 +1,4 @@
+#![feature(core)]
 #![feature(test)]
 
 extern crate simdty;
@@ -96,6 +97,16 @@ pub enum Error {
 }
 
 pub type Result<T> = std::result::Result<T, Error>;
+
+pub fn max_bits(input: &[i32x4]) -> u32 {
+    let mut buf = i32x4(0,0,0,0);
+    unsafe {
+        for i in (0 .. input.len()) {
+            buf |= *(input.get_unchecked(i))
+        }
+    }
+    32 - (buf.0 | buf.1 | buf.2 | buf.3).leading_zeros()
+}
 
 pub fn pack_nomask(output: &mut [i32x4], input: &[i32x4], bits: i32) -> Result<()> {
     if input.len() < 32usize {
@@ -443,6 +454,19 @@ pub fn equal(a: &[i32x4], b: &[i32x4]) {
 }
 
 #[test]
+fn test_max_bits() {
+    let mut input = [i32x4(0,0,0,0), i32x4(0,0,0,0)];
+    input[0] = i32x4(1,0,0,0);
+    assert_eq!(max_bits(&input[..]), 1);
+    input[0] = i32x4(0,1,0,0);
+    assert_eq!(max_bits(&input[..]), 1);
+    input[0] = i32x4(0,0,1,0);
+    assert_eq!(max_bits(&input[..]), 1);
+    input[0] = i32x4(0,0,0,1);
+    assert_eq!(max_bits(&input[..]), 1);
+}
+
+#[test]
 fn test_pack1() {
     let input: [i32x4; 32] = [i32x4(1,0,1,0);32];
 
@@ -505,7 +529,6 @@ fn test_pack3() {
     equal(&output2[..], &input[..]);
 }
 
-#[bench]
 macro_rules! bench_pack_nomask {
 ($b:ident, $n:expr) => { {
     let n = 10;
@@ -520,7 +543,6 @@ macro_rules! bench_pack_nomask {
 } }
 }
 
-#[bench]
 macro_rules! bench_pack {
 ($b:ident, $n:expr) => { {
     let n = 10;
@@ -535,7 +557,6 @@ macro_rules! bench_pack {
 } }
 }
 
-#[bench]
 macro_rules! bench_unpack {
 ($b:ident, $n:expr) => { {
     let n = 10;
