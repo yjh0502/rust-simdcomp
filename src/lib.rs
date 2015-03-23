@@ -22,8 +22,9 @@ macro_rules! sa {
                 outbuf |= x86::sse2_pslli_d(*($i.get_unchecked(srcidx)), shift);
             )*
             *($out.get_unchecked_mut(destidx)) = outbuf;
-            outbuf = x86::sse2_psrli_d(*($i.get_unchecked(srcidx)), 32 - shift);
-
+            if 32-shift < $mul {
+                outbuf = x86::sse2_psrli_d(*($i.get_unchecked(srcidx)), 32 - shift);
+            }
             destidx += 1;
         })*
     }
@@ -48,7 +49,9 @@ macro_rules! sam {
                 outbuf |= x86::sse2_pslli_d(*($i.get_unchecked(srcidx)) & mask, shift);
             )*
             *($out.get_unchecked_mut(destidx)) = outbuf;
-            outbuf = x86::sse2_psrli_d(*($i.get_unchecked(srcidx)) & mask, 32 - shift);
+            if 32-shift < $mul {
+                outbuf = x86::sse2_psrli_d(*($i.get_unchecked(srcidx)) & mask, 32 - shift);
+            }
             destidx += 1;
         })*
     }
@@ -503,13 +506,142 @@ fn test_pack3() {
 }
 
 #[bench]
-fn bench_pack1(b: &mut test::Bencher) {
-    let mut input: [i32x4; 32] = [i32x4(1,0,1,0);32];
-    let mut output = [i32x4(0, 0, 0, 0), i32x4(0, 0, 0, 0), i32x4(0, 0, 0, 0), i32x4(0, 0, 0, 0)];
-
-    b.bytes = 4u64 * 32 * 2;
-    b.iter(test::black_box(|| {
-        pack_nomask(&mut output, &input, 3).unwrap();
-        unpack(&mut input, &output, 3).unwrap();
+macro_rules! bench_pack_nomask {
+($b:ident, $n:expr) => { {
+    let n = 10;
+    let input: [i32x4;32] = [i32x4(1,0,1,0);32];
+    let mut output: [i32x4;$n] = [i32x4(0,0,0,0);$n];
+    $b.bytes = 4u64 * 32 * n;
+    $b.iter(test::black_box(|| {
+        for _ in (0 .. n) {
+            pack_nomask(&mut output, &input, $n).unwrap();
+        }
     }))
+} }
 }
+
+#[bench]
+macro_rules! bench_pack {
+($b:ident, $n:expr) => { {
+    let n = 10;
+    let input: [i32x4;32] = [i32x4(1,0,1,0);32];
+    let mut output: [i32x4;$n] = [i32x4(0,0,0,0);$n];
+    $b.bytes = 4u64 * 32 * n;
+    $b.iter(test::black_box(|| {
+        for _ in (0 .. n) {
+            pack(&mut output, &input, $n).unwrap();
+        }
+    }))
+} }
+}
+
+#[bench]
+macro_rules! bench_unpack {
+($b:ident, $n:expr) => { {
+    let n = 10;
+    let input: [i32x4;$n] = [i32x4(0,0,0,0);$n];
+    let mut output: [i32x4;32] = [i32x4(1,0,1,0);32];
+    $b.bytes = 4u64 * 32 * n;
+    $b.iter(test::black_box(|| {
+        for _ in (0 .. n) {
+            unpack(&mut output, &input, $n).unwrap();
+        }
+    }))
+} }
+}
+
+// GENERATED CODE START
+#[bench] fn bench_pack_nomask01(b: &mut test::Bencher) { bench_pack_nomask!(b, 1); }
+#[bench] fn bench_pack01(b: &mut test::Bencher) { bench_pack!(b, 1); }
+#[bench] fn bench_unpack01(b: &mut test::Bencher) { bench_unpack!(b, 1); }
+#[bench] fn bench_pack_nomask02(b: &mut test::Bencher) { bench_pack_nomask!(b, 2); }
+#[bench] fn bench_pack02(b: &mut test::Bencher) { bench_pack!(b, 2); }
+#[bench] fn bench_unpack02(b: &mut test::Bencher) { bench_unpack!(b, 2); }
+#[bench] fn bench_pack_nomask03(b: &mut test::Bencher) { bench_pack_nomask!(b, 3); }
+#[bench] fn bench_pack03(b: &mut test::Bencher) { bench_pack!(b, 3); }
+#[bench] fn bench_unpack03(b: &mut test::Bencher) { bench_unpack!(b, 3); }
+#[bench] fn bench_pack_nomask04(b: &mut test::Bencher) { bench_pack_nomask!(b, 4); }
+#[bench] fn bench_pack04(b: &mut test::Bencher) { bench_pack!(b, 4); }
+#[bench] fn bench_unpack04(b: &mut test::Bencher) { bench_unpack!(b, 4); }
+#[bench] fn bench_pack_nomask05(b: &mut test::Bencher) { bench_pack_nomask!(b, 5); }
+#[bench] fn bench_pack05(b: &mut test::Bencher) { bench_pack!(b, 5); }
+#[bench] fn bench_unpack05(b: &mut test::Bencher) { bench_unpack!(b, 5); }
+#[bench] fn bench_pack_nomask06(b: &mut test::Bencher) { bench_pack_nomask!(b, 6); }
+#[bench] fn bench_pack06(b: &mut test::Bencher) { bench_pack!(b, 6); }
+#[bench] fn bench_unpack06(b: &mut test::Bencher) { bench_unpack!(b, 6); }
+#[bench] fn bench_pack_nomask07(b: &mut test::Bencher) { bench_pack_nomask!(b, 7); }
+#[bench] fn bench_pack07(b: &mut test::Bencher) { bench_pack!(b, 7); }
+#[bench] fn bench_unpack07(b: &mut test::Bencher) { bench_unpack!(b, 7); }
+#[bench] fn bench_pack_nomask08(b: &mut test::Bencher) { bench_pack_nomask!(b, 8); }
+#[bench] fn bench_pack08(b: &mut test::Bencher) { bench_pack!(b, 8); }
+#[bench] fn bench_unpack08(b: &mut test::Bencher) { bench_unpack!(b, 8); }
+#[bench] fn bench_pack_nomask09(b: &mut test::Bencher) { bench_pack_nomask!(b, 9); }
+#[bench] fn bench_pack09(b: &mut test::Bencher) { bench_pack!(b, 9); }
+#[bench] fn bench_unpack09(b: &mut test::Bencher) { bench_unpack!(b, 9); }
+#[bench] fn bench_pack_nomask10(b: &mut test::Bencher) { bench_pack_nomask!(b, 10); }
+#[bench] fn bench_pack10(b: &mut test::Bencher) { bench_pack!(b, 10); }
+#[bench] fn bench_unpack10(b: &mut test::Bencher) { bench_unpack!(b, 10); }
+#[bench] fn bench_pack_nomask11(b: &mut test::Bencher) { bench_pack_nomask!(b, 11); }
+#[bench] fn bench_pack11(b: &mut test::Bencher) { bench_pack!(b, 11); }
+#[bench] fn bench_unpack11(b: &mut test::Bencher) { bench_unpack!(b, 11); }
+#[bench] fn bench_pack_nomask12(b: &mut test::Bencher) { bench_pack_nomask!(b, 12); }
+#[bench] fn bench_pack12(b: &mut test::Bencher) { bench_pack!(b, 12); }
+#[bench] fn bench_unpack12(b: &mut test::Bencher) { bench_unpack!(b, 12); }
+#[bench] fn bench_pack_nomask13(b: &mut test::Bencher) { bench_pack_nomask!(b, 13); }
+#[bench] fn bench_pack13(b: &mut test::Bencher) { bench_pack!(b, 13); }
+#[bench] fn bench_unpack13(b: &mut test::Bencher) { bench_unpack!(b, 13); }
+#[bench] fn bench_pack_nomask14(b: &mut test::Bencher) { bench_pack_nomask!(b, 14); }
+#[bench] fn bench_pack14(b: &mut test::Bencher) { bench_pack!(b, 14); }
+#[bench] fn bench_unpack14(b: &mut test::Bencher) { bench_unpack!(b, 14); }
+#[bench] fn bench_pack_nomask15(b: &mut test::Bencher) { bench_pack_nomask!(b, 15); }
+#[bench] fn bench_pack15(b: &mut test::Bencher) { bench_pack!(b, 15); }
+#[bench] fn bench_unpack15(b: &mut test::Bencher) { bench_unpack!(b, 15); }
+#[bench] fn bench_pack_nomask16(b: &mut test::Bencher) { bench_pack_nomask!(b, 16); }
+#[bench] fn bench_pack16(b: &mut test::Bencher) { bench_pack!(b, 16); }
+#[bench] fn bench_unpack16(b: &mut test::Bencher) { bench_unpack!(b, 16); }
+#[bench] fn bench_pack_nomask17(b: &mut test::Bencher) { bench_pack_nomask!(b, 17); }
+#[bench] fn bench_pack17(b: &mut test::Bencher) { bench_pack!(b, 17); }
+#[bench] fn bench_unpack17(b: &mut test::Bencher) { bench_unpack!(b, 17); }
+#[bench] fn bench_pack_nomask18(b: &mut test::Bencher) { bench_pack_nomask!(b, 18); }
+#[bench] fn bench_pack18(b: &mut test::Bencher) { bench_pack!(b, 18); }
+#[bench] fn bench_unpack18(b: &mut test::Bencher) { bench_unpack!(b, 18); }
+#[bench] fn bench_pack_nomask19(b: &mut test::Bencher) { bench_pack_nomask!(b, 19); }
+#[bench] fn bench_pack19(b: &mut test::Bencher) { bench_pack!(b, 19); }
+#[bench] fn bench_unpack19(b: &mut test::Bencher) { bench_unpack!(b, 19); }
+#[bench] fn bench_pack_nomask20(b: &mut test::Bencher) { bench_pack_nomask!(b, 20); }
+#[bench] fn bench_pack20(b: &mut test::Bencher) { bench_pack!(b, 20); }
+#[bench] fn bench_unpack20(b: &mut test::Bencher) { bench_unpack!(b, 20); }
+#[bench] fn bench_pack_nomask21(b: &mut test::Bencher) { bench_pack_nomask!(b, 21); }
+#[bench] fn bench_pack21(b: &mut test::Bencher) { bench_pack!(b, 21); }
+#[bench] fn bench_unpack21(b: &mut test::Bencher) { bench_unpack!(b, 21); }
+#[bench] fn bench_pack_nomask22(b: &mut test::Bencher) { bench_pack_nomask!(b, 22); }
+#[bench] fn bench_pack22(b: &mut test::Bencher) { bench_pack!(b, 22); }
+#[bench] fn bench_unpack22(b: &mut test::Bencher) { bench_unpack!(b, 22); }
+#[bench] fn bench_pack_nomask23(b: &mut test::Bencher) { bench_pack_nomask!(b, 23); }
+#[bench] fn bench_pack23(b: &mut test::Bencher) { bench_pack!(b, 23); }
+#[bench] fn bench_unpack23(b: &mut test::Bencher) { bench_unpack!(b, 23); }
+#[bench] fn bench_pack_nomask24(b: &mut test::Bencher) { bench_pack_nomask!(b, 24); }
+#[bench] fn bench_pack24(b: &mut test::Bencher) { bench_pack!(b, 24); }
+#[bench] fn bench_unpack24(b: &mut test::Bencher) { bench_unpack!(b, 24); }
+#[bench] fn bench_pack_nomask25(b: &mut test::Bencher) { bench_pack_nomask!(b, 25); }
+#[bench] fn bench_pack25(b: &mut test::Bencher) { bench_pack!(b, 25); }
+#[bench] fn bench_unpack25(b: &mut test::Bencher) { bench_unpack!(b, 25); }
+#[bench] fn bench_pack_nomask26(b: &mut test::Bencher) { bench_pack_nomask!(b, 26); }
+#[bench] fn bench_pack26(b: &mut test::Bencher) { bench_pack!(b, 26); }
+#[bench] fn bench_unpack26(b: &mut test::Bencher) { bench_unpack!(b, 26); }
+#[bench] fn bench_pack_nomask27(b: &mut test::Bencher) { bench_pack_nomask!(b, 27); }
+#[bench] fn bench_pack27(b: &mut test::Bencher) { bench_pack!(b, 27); }
+#[bench] fn bench_unpack27(b: &mut test::Bencher) { bench_unpack!(b, 27); }
+#[bench] fn bench_pack_nomask28(b: &mut test::Bencher) { bench_pack_nomask!(b, 28); }
+#[bench] fn bench_pack28(b: &mut test::Bencher) { bench_pack!(b, 28); }
+#[bench] fn bench_unpack28(b: &mut test::Bencher) { bench_unpack!(b, 28); }
+#[bench] fn bench_pack_nomask29(b: &mut test::Bencher) { bench_pack_nomask!(b, 29); }
+#[bench] fn bench_pack29(b: &mut test::Bencher) { bench_pack!(b, 29); }
+#[bench] fn bench_unpack29(b: &mut test::Bencher) { bench_unpack!(b, 29); }
+#[bench] fn bench_pack_nomask30(b: &mut test::Bencher) { bench_pack_nomask!(b, 30); }
+#[bench] fn bench_pack30(b: &mut test::Bencher) { bench_pack!(b, 30); }
+#[bench] fn bench_unpack30(b: &mut test::Bencher) { bench_unpack!(b, 30); }
+#[bench] fn bench_pack_nomask31(b: &mut test::Bencher) { bench_pack_nomask!(b, 31); }
+#[bench] fn bench_pack31(b: &mut test::Bencher) { bench_pack!(b, 31); }
+#[bench] fn bench_unpack31(b: &mut test::Bencher) { bench_unpack!(b, 31); }
+// GENERATED CODE END

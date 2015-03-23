@@ -3,7 +3,7 @@
 import sys
 from math import ceil
 
-def print_packbit(l, fn, macro):
+def gen_packbit(l, fn, macro):
     s = "fn %s(output: &mut [i32x4], input: &[i32x4]) {\n" % (fn)
     s += "    %s!(output, input, %s, " % (macro, l)
 
@@ -19,10 +19,10 @@ def print_packbit(l, fn, macro):
     s += "%s); }\n" % (";".join(acc + ["31"]))
     return s
 
-def print_pack(fn, fnbit, macro):
+def gen_pack(fn, fnbit, macro):
     s = ""
     for l in range(1, 32):
-        s += print_packbit(l, fnbit % l, macro)
+        s += gen_packbit(l, fnbit % l, macro)
 
     s += "fn %s(output: &mut [i32x4], input: &[i32x4], bits: i32) {\n" % (fn)
     s += "    match bits {\n"
@@ -33,10 +33,26 @@ def print_pack(fn, fnbit, macro):
     s += "    }\n}\n"
     return s
 
-s = "// GENERATED CODE START\n"
-s += print_pack("pack_nomask_bits", "pack_nomask_%sbit", "sa") + "\n"
-s += print_pack("pack_bits", "pack_mask_%sbit", "sam") + "\n"
-s += print_pack("unpack_bits", "unpack_%sbit", "sms")
-s += "// GENERATED CODE END"
+def gen_pack_unpack():
+    s = "// GENERATED CODE START\n"
+    s += gen_pack("pack_nomask_bits", "pack_nomask_%sbit", "sa") + "\n"
+    s += gen_pack("pack_bits", "pack_mask_%sbit", "sam") + "\n"
+    s += gen_pack("unpack_bits", "unpack_%sbit", "sms")
+    s += "// GENERATED CODE END"
+    return s
 
-print s
+def gen_bench():
+    s = "// GENERATED CODE START\n"
+    for l in range(1, 32):
+        s += "#[bench] fn bench_pack_nomask%02d(b: &mut test::Bencher) { bench_pack_nomask!(b, %s); }\n" % (l, l)
+        s += "#[bench] fn bench_pack%02d(b: &mut test::Bencher) { bench_pack!(b, %s); }\n" % (l, l)
+        s += "#[bench] fn bench_unpack%02d(b: &mut test::Bencher) { bench_unpack!(b, %s); }\n" % (l, l)
+    s += "// GENERATED CODE END"
+    return s
+
+if  __name__ == "__main__":
+    if len(sys.argv) == 2 and sys.argv[1] == "bench":
+        print gen_bench()
+    else:
+        print gen_pack_unpack()
+
