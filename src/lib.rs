@@ -99,13 +99,35 @@ pub enum Error {
 pub type Result<T> = std::result::Result<T, Error>;
 
 pub fn max_bits(input: &[i32x4]) -> u32 {
-    let mut buf = i32x4(0,0,0,0);
+    let mut mask = i32x4(0,0,0,0);
     unsafe {
         for i in (0 .. input.len()) {
-            buf |= *(input.get_unchecked(i))
+            mask |= *(input.get_unchecked(i))
         }
+        mask |= x86::sse2_pshuf_d(mask, 0b01001110);
+        mask |= x86::sse2_pshuf_d(mask, 0b00011011);
     }
-    32 - (buf.0 | buf.1 | buf.2 | buf.3).leading_zeros()
+    32 - mask.0.leading_zeros()
+}
+
+pub fn max_bits_diff(input: &[i32x4]) -> u32 {
+    if input.len() == 0 {
+        return 0;
+    }
+
+    let mut mask = i32x4(0,0,0,0);
+    unsafe {
+        let mut prev = (*input.get_unchecked(0)).0;
+        for i in (0 .. input.len()) {
+            let cur = *input.get_unchecked(i);
+            mask |= cur - i32x4(prev, cur.0, cur.1, cur.2);
+            prev = cur.3;
+        }
+
+        mask |= x86::sse2_pshuf_d(mask, 0b01001110);
+        mask |= x86::sse2_pshuf_d(mask, 0b00011011);
+    }
+    32 - mask.0.leading_zeros()
 }
 
 pub fn pack_nomask(output: &mut [i32x4], input: &[i32x4], bits: i32) -> Result<()> {
@@ -569,6 +591,22 @@ macro_rules! bench_unpack {
         }
     }))
 } }
+}
+
+#[test]
+fn test_bits_diff() {
+    let mut input = [i32x4(0,0,0,0);32];
+    input[31].3 = 2;
+    assert_eq!(max_bits_diff(&input[..]), 2);
+}
+
+#[bench]
+fn bench_bits_diff(b: &mut test::Bencher) {
+    let input: [i32x4;32] = [i32x4(1,0,1,0);32];
+    b.bytes = 4u64 * 32;
+    b.iter(test::black_box(|| {
+        max_bits_diff(&input)
+    }))
 }
 
 // GENERATED CODE START
